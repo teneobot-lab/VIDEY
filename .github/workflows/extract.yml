@@ -1,0 +1,33 @@
+name: Extract upload
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract zip ke root repo
+        shell: bash
+        run: |
+          Z=PIDI-main-updated.zip
+          [ -f "$Z" ] || { echo "Tidak ada $Z, lewati."; exit 0; }
+          rm -rf _x && mkdir _x && unzip -q "$Z" -d _x
+          rm -rf TOFHub
+          cp -r _x/PIDI-main/TOFHub TOFHub
+          cp _x/PIDI-main/loader.lua _x/PIDI-main/README.md .
+          rm -rf _x "$Z"
+          # arahkan loader ke repo ini
+          sed -i "s#or \"teneobot-lab\"#or \"${GITHUB_REPOSITORY_OWNER}\"#; s#or \"PIDI\"#or \"${GITHUB_REPOSITORY#*/}\"#" loader.lua
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Extract PIDI update" || exit 0
+          git push
