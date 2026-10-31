@@ -101,7 +101,7 @@ function FV.clearRecent() FV.recent = {} end
 --------------------------------------------------------
 local function onPlayed(track)
     note(track)
-    if Cfg.VDFastVault and Cfg.VDVaultMode == "Animasi" and FV.matches(track.Name) then pcall(FV.boost, track) end
+    if Cfg.VDFastVault and Cfg.VDVaultMode == "Animasi" and not (Cfg.VDVaultForce and tostring(track.Name):lower():find("walkingvault", 1, true)) and FV.matches(track.Name) then pcall(FV.boost, track) end
 end
 
 -- sambungkan ke Animator karakter saat ini (otomatis ikut respawn)
@@ -129,7 +129,7 @@ function FV.step()
         local n = 0
         -- terapkan ulang tiap 0.05 dtk: game kadang menulis ulang kecepatan track
         for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
-            if FV.matches(track.Name) then
+            if FV.matches(track.Name) and not (Cfg.VDVaultForce and tostring(track.Name):lower():find("walkingvault", 1, true)) then
                 pcall(FV.boost, track)
                 n += 1
             end
@@ -143,7 +143,57 @@ function FV.step()
     end
 end
 
-Scheduler.add("Fast vault", 0.05, FV.step)
-Hub.onUnload(FV.restore)
+--------------------------------------------------------
+-- Paksa tier "fast" (Cfg.VDVaultForce)
+-- Dari log: client memilih tier ("fast" bila lari kencang, "medium" bila pelan) lalu mengirimnya di
+-- argumen ke-5 VaultEvent:FireServer(trigger, true, uuid, char, tier). Di sini argumen itu diganti "fast"
+-- dan animasi "WalkingVault" disamakan durasinya dengan vault fast (~0.53 dtk).
+-- Server bisa saja memvalidasi tier sendiri; bila vault jadi macet/ditolak, matikan opsi ini.
+--------------------------------------------------------
+local FAST_LEN = 0.53
+local dead = false
+FV.forced = 0
+
+if hookmetamethod and newcclosure and getnamecallmethod then
+    local old
+    local ok = pcall(function()
+        old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+            if dead or not (Cfg.VDFastVault and Cfg.VDVaultForce) then return old(self, ...) end
+            if getnamecallmethod() ~= "FireServer" then return old(self, ...) end
+            local a2, a5 = select(2, ...), select(5, ...)
+            if a2 == true and type(a5) == "string" and a5 ~= "fast" and self.Name == "VaultEvent" then
+                local args = table.pack(...)
+                args[5] = "fast"
+                FV.forced += 1
+                task.defer(function()
+                    pcall(function() LP.Character:SetAttribute("VaultTier", "fast") end)
+                end)
+                return old(self, table.unpack(args, 1, args.n))
+            end
+            return old(self, ...)
+        end))
+    end)
+    FV.hooked = ok and old ~= nil
+else
+    FV.hooked = false
+end
+
+-- samakan durasi animasi walking-vault dengan fast (dipanggil tiap step)
+function FV.equalize()
+    if not (animator and Cfg.VDVaultForce) then return end
+    for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+        if tostring(track.Name):lower():find("walkingvault", 1, true) and track.Length > 0 then
+            if base[track] == nil then base[track] = track.Speed end
+            local want = math.min(track.Length / FAST_LEN, base[track] * 2)
+            if math.abs(track.Speed - want) > 0.01 then track:AdjustSpeed(want) end
+        end
+    end
+end
+
+Scheduler.add("Fast vault", 0.05, function()
+    FV.step()
+    if Cfg.VDFastVault and Cfg.VDVaultForce then pcall(FV.equalize) end
+end)
+Hub.onUnload(function() dead = true FV.restore() end)
 
 return FV

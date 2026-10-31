@@ -94,15 +94,24 @@ local function hookRemotes()
     if hooked or not (hookmetamethod and newcclosure and getnamecallmethod) then return end
     hooked = true
     local old
+    -- PENTING: di dalam hook jangan memanggil method Instance apa pun (mis. GetFullName):
+    -- di sebagian executor itu menimpa "nama method" yang sedang dipanggil, sehingga FireServer asli
+    -- salah jalan dan remote game (vault, dll) gagal. Hook hanya membaca properti + menjadwalkan
+    -- pencatatan (task.defer) setelah panggilan asli diteruskan.
     old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+        if not outbound or dead then return old(self, ...) end -- tidak merekam: langsung teruskan
         local m = getnamecallmethod()
-        if outbound and not dead and (m == "FireServer" or m == "InvokeServer") then
-            local nm = tostring(self.Name)
+        if m == "FireServer" or m == "InvokeServer" then
+            local nm = self.Name
             if NOISY[nm] then
                 noise["C>S " .. nm] = (noise["C>S " .. nm] or 0) + 1
             else
-                local args = table.pack(...)
-                pcall(outbound, ("%s:%s(%s)"):format(pathOf(self), m, fmtArgs(args, args.n)))
+                local sf, args = self, table.pack(...)
+                task.defer(function()
+                    if outbound then
+                        pcall(outbound, ("%s:%s(%s)"):format(pathOf(sf), m, fmtArgs(args, args.n)))
+                    end
+                end)
             end
         end
         return old(self, ...)
@@ -154,7 +163,7 @@ function Logger.start(seconds, done)
     if Logger.active or dead then return end
     seconds = math.clamp(tonumber(seconds) or 20, 3, 120)
     Logger.active = true
-    hookRemotes()
+    if Logger.useHook ~= false then hookRemotes() end
     scanWindows()
 
     local t0 = os.clock()
@@ -486,6 +495,16 @@ local function button(text, x, w, color)
     make("UICorner", { CornerRadius = UDim.new(0, 6) }, b)
     return b
 end
+local hookBtn = make("TextButton", {
+    Size = UDim2.fromOffset(70, 22), Position = UDim2.fromOffset(150, 74), BackgroundColor3 = PANEL, BorderSizePixel = 0,
+    Text = "Hook: ON", Font = Enum.Font.GothamBold, TextSize = 10, TextColor3 = TXT,
+}, frame)
+make("UICorner", { CornerRadius = UDim.new(0, 5) }, hookBtn)
+hookBtn.Activated:Connect(function()
+    if Logger.active then return end
+    Logger.useHook = not (Logger.useHook ~= false)
+    hookBtn.Text = Logger.useHook and "Hook: ON" or "Hook: OFF"
+end)
 local startBtn = button("Mulai", 10, 100, ACC)
 local stopBtn = button("Stop + salin", 120, 100, Color3.fromRGB(90, 96, 120))
 

@@ -26,13 +26,19 @@ local function hookRemotes()
     if hooked or not (hookmetamethod and newcclosure and getnamecallmethod) then return end
     hooked = true
     local old
+    -- jangan memanggil method Instance (mis. GetFullName) di dalam hook: bisa merusak panggilan remote asli.
+    -- Pencatatan dijadwalkan lewat task.defer setelah panggilan asli diteruskan.
     old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+        if not remoteLog or Hub.Dead then return old(self, ...) end
         local m = getnamecallmethod()
-        if remoteLog and not Hub.Dead and (m == "FireServer" or m == "InvokeServer") then
-            local args = table.pack(...)
-            local parts = {}
-            for i = 1, math.min(args.n, 6) do parts[#parts + 1] = typeof(args[i]) .. ":" .. tostring(args[i]):sub(1, 30) end
-            remoteLog[#remoteLog + 1] = ("%s:%s(%s)"):format(Util.pathOf(self), m, table.concat(parts, ", "))
+        if m == "FireServer" or m == "InvokeServer" then
+            local sf, args = self, table.pack(...)
+            task.defer(function()
+                if not remoteLog then return end
+                local parts = {}
+                for i = 1, math.min(args.n, 6) do parts[#parts + 1] = typeof(args[i]) .. ":" .. tostring(args[i]):sub(1, 30) end
+                remoteLog[#remoteLog + 1] = ("%s:%s(%s)"):format(Util.pathOf(sf), m, table.concat(parts, ", "))
+            end)
         end
         return old(self, ...)
     end))
