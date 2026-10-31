@@ -43,7 +43,7 @@ local Cfg = {
     -- Violence District
     VDAutoSkillCheck = false, VDSkillMode = "Perfect",
     VDSpeedBoost = false, VDSpeedMultiplier = 0.30, VDSpeedSafeMode = true,
-    VDFastVault = false, VDVaultMult = 1.5, VDVaultForce = true, VDVaultMode = "Atribut", VDVaultKeys = "vault",
+    VDFastVault = false, VDVaultMult = 1.5, VDVaultForce = true, VDVaultAnim = true, VDVaultMode = "Atribut", VDVaultKeys = "vault",
     -- GUI
     Accent = Color3.fromRGB(124, 106, 255), Theme = "Overworld", ShowFloat = true, W = 420, H = 320,
     UIAnim = true,

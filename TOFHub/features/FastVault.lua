@@ -16,7 +16,8 @@ local Util = Hub.use("core/Util")
 local Scheduler = Hub.use("core/Scheduler")
 
 local ATTR = "vaultspeed"
-local FV = { keys = {}, recent = {}, boosted = 0, status = "Mati", attr = { char = nil, orig = nil, set = nil } }
+local FV = { runId = "rbxassetid://83873880822918", keys = {}, recent = {}, boosted = 0, status = "Mati", attr = { char = nil, orig = nil, set = nil } }
+local swapped = setmetatable({}, { __mode = "k" })
 local base = setmetatable({}, { __mode = "k" }) -- AnimationTrack -> kecepatan asli
 local animator, conn
 
@@ -34,6 +35,11 @@ end
 
 -- catat nama animasi sekali-jalan (bukan loop) supaya tidak penuh idle/jalan
 local function note(track)
+    local okn, nm = pcall(function() return tostring(track.Name):lower() end)
+    if okn and nm:find("runningvault", 1, true) then
+        local okid, id = pcall(function() return track.Animation.AnimationId end)
+        if okid and type(id) == "string" and id ~= "" then FV.runId = id end
+    end
     local ok, looped = pcall(function() return track.Looped end)
     if ok and looped then return end
     local n = tostring(track.Name)
@@ -147,10 +153,10 @@ end
 -- Paksa tier "fast" (Cfg.VDVaultForce)
 -- Dari log: client memilih tier ("fast" bila lari kencang, "medium" bila pelan) lalu mengirimnya di
 -- argumen ke-5 VaultEvent:FireServer(trigger, true, uuid, char, tier). Di sini argumen itu diganti "fast"
--- dan animasi "WalkingVault" disamakan durasinya dengan vault fast (~0.53 dtk).
+-- dan animasi "WalkingVault" disamakan durasinya dengan vault fast asli (0.50 dtk / pengali).
 -- Server bisa saja memvalidasi tier sendiri; bila vault jadi macet/ditolak, matikan opsi ini.
 --------------------------------------------------------
-local FAST_LEN = 0.53
+local RUN_LEN = 0.50 -- panjang RunningVaultAnimation2 (vault fast asli) pada kecepatan 1x
 local dead = false
 FV.forced = 0
 
@@ -184,10 +190,33 @@ function FV.equalize()
     for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
         if tostring(track.Name):lower():find("walkingvault", 1, true) and track.Length > 0 then
             if base[track] == nil then base[track] = track.Speed end
-            local want = math.min(track.Length / FAST_LEN, base[track] * 2)
+            -- vault fast asli = 0.50 dtk / pengali; samakan durasi walking-vault dengan itu
+            local want = math.min(track.Length / (RUN_LEN / math.max(Cfg.VDVaultMult, 1)), 6)
             if math.abs(track.Speed - want) > 0.01 then track:AdjustSpeed(want) end
+            if Cfg.VDVaultAnim and not swapped[track] then FV.swapVisual(track) end
         end
     end
+end
+
+-- Gerakan (marker CFRAME) tetap dijalankan animasi walking milik game, tapi tampilannya diganti animasi
+-- RunningVault (vault fast asli): walking dibuat nyaris tak terlihat, running dimainkan di atasnya.
+function FV.swapVisual(walk)
+    swapped[walk] = true
+    local ok = pcall(function()
+        local a = Instance.new("Animation")
+        a.AnimationId = FV.runId
+        local rt = animator:LoadAnimation(a)
+        rt.Priority = Enum.AnimationPriority.Action
+        rt.Looped = false
+        walk:AdjustWeight(0.001, 0)
+        rt:Play(0, 1, math.max(Cfg.VDVaultMult, 1))
+        local c
+        c = walk.Stopped:Connect(function()
+            pcall(function() rt:Stop(0) rt:Destroy() end)
+            if c then c:Disconnect() end
+        end)
+    end)
+    if not ok then swapped[walk] = true end
 end
 
 Scheduler.add("Fast vault", 0.05, function()
