@@ -28,7 +28,8 @@ local Cfg = {
     -- ESP umum
     ShowLabels = true, -- saklar utama: mati = SEMUA label ESP (pemain, zombie, objek) hilang
     ShowName = true, ShowDist = true, ShowHP = true, ShowRole = true,
-    GenBar = true, -- progress generator tampil sebagai bar (bukan angka persen)
+    GenBar = true, -- bar progres generator: tampil otomatis di generator yang sedang diperbaiki, tanpa perlu label
+    GenHideDone = true, -- ESP generator mati otomatis saat progres penuh (100%)
     FillT = 65, TextSize = 12, ESPMode = "CoreGui",
     ZomAll = false, KeyZombie = "scp2, zombie",
     -- Dunia (lighting)
@@ -42,6 +43,7 @@ local Cfg = {
     -- Violence District
     VDAutoSkillCheck = false, VDSkillMode = "Perfect",
     VDSpeedBoost = false, VDSpeedMultiplier = 0.30, VDSpeedSafeMode = true,
+    VDFastVault = false, VDVaultMult = 2, VDVaultMode = "Atribut", VDVaultKeys = "vault",
     -- GUI
     Accent = Color3.fromRGB(124, 106, 255), Theme = "Overworld", ShowFloat = true, W = 420, H = 320,
     UIAnim = true,

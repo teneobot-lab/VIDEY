@@ -121,21 +121,28 @@ local function progressOf(inst)
     end
 end
 
--- teks tambahan per jenis objek: fn(rec, teksDasar) -> teksBaru, [bar 0..1]
--- Generator: progress tampil sebagai BAR di bawah label (bukan angka persen).
--- Cfg.GenBar dimatikan -> kembali ke teks persen.
+-- teks tambahan per jenis objek: fn(rec, teksDasar) -> teksBaru
+-- Generator: bila bar dimatikan (Cfg.GenBar) progres kembali jadi teks persen.
 local LABEL_HOOKS = {
     Gen = function(rec, txt)
-        local pr = progressOf(rec.inst)
+        local pr = rec.pr
         if not pr then return txt end
-        pr = math.clamp(pr, 0, 100)
+        if pr >= 100 then return txt .. " [SELESAI]" end
         if not Cfg.GenBar then return txt .. " " .. pr .. "%" end
-        if pr >= 100 then txt = txt .. " [SELESAI]" end
-        return txt, pr / 100
+        return txt
     end,
     Hook = function(rec, txt)
         if not CS:HasTag(rec.inst, "Spike") then return txt .. " [TERISI]" end
         return txt
+    end,
+}
+
+-- bar progres per jenis objek: fn(rec) -> 0..1 atau nil.
+-- BERDIRI SENDIRI dari label: tampil otomatis walau label dimatikan.
+-- Generator: bar muncul begitu survivor sudah memulai perbaikan (progres > 0).
+local BAR_HOOKS = {
+    Gen = function(rec)
+        if Cfg.GenBar and rec.pr and rec.pr > 0 then return rec.pr / 100 end
     end,
 }
 
@@ -150,7 +157,14 @@ function Obj.update()
         end
         local g = rec.g
         local dist = (part and myRoot) and (part.Position - myRoot.Position).Magnitude or 0
-        if Cfg[g.on] and part and dist <= Cfg[g.dist] then
+        -- generator yang sudah penuh: seluruh ESP-nya (label, bar, chams) dimatikan
+        local done = false
+        if g.id == "Gen" then
+            local pr = progressOf(inst)
+            rec.pr = pr and math.clamp(pr, 0, 100) or nil
+            done = Cfg.GenHideDone and rec.pr ~= nil and rec.pr >= 100
+        end
+        if Cfg[g.on] and part and dist <= Cfg[g.dist] and not done then
             rec.dist = dist
             list[#list + 1] = rec
         else
@@ -164,16 +178,17 @@ function Obj.update()
         local g = rec.g
         local ok = pcall(function()
             local col = Cfg[g.col]
-            -- label ikut saklar utama Cfg.ShowLabels (dicek di Draw.label) + saklar per objek
+            -- teks label: saklar utama Cfg.ShowLabels (dicek di Draw.label) + saklar per objek.
+            -- bar progres: terpisah dari label, tampil sendiri bila ada.
+            local txt = nil
             if Cfg[g.label] then
-                local txt, bar = g.name, nil
+                txt = g.name
                 local hook = LABEL_HOOKS[g.id]
-                if hook then txt, bar = hook(rec, txt) end
+                if hook then txt = hook(rec, txt) end
                 if Cfg.ShowDist then txt = txt .. "  " .. math.floor(rec.dist) .. "m" end
-                Draw.label(rec, 200, 18, 2, col, txt, rec.part, bar)
-            else
-                Draw.dropBB(rec)
             end
+            local barHook = BAR_HOOKS[g.id]
+            Draw.label(rec, 200, 18, 2, col, txt, rec.part, barHook and barHook(rec) or nil)
             if Cfg[g.chams] and hlCount < 16 then
                 hlCount += 1
                 Draw.chams(rec, rec.inst, col, 0.75)

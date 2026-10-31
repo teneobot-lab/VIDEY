@@ -11,8 +11,8 @@ OUT = ROOT.parent / "TOFHub_bundle.lua" if ROOT.name == "TOFHub" else ROOT / "TO
 mods = []
 for f in sorted(ROOT.rglob("*.lua")):
     rel = f.relative_to(ROOT).as_posix()
-    if rel == "main.lua":
-        continue
+    if rel == "main.lua" or rel.startswith("tools/"):
+        continue  # tools/ = skrip mandiri (bukan modul hub)
     mods.append((rel[:-4], f.read_text(encoding="utf-8")))
 
 parts = ["{"]

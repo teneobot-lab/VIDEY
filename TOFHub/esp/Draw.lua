@@ -1,6 +1,7 @@
 -- Helper gambar ESP bersama: label (BillboardGui) + bar progres + chams (Highlight).
 -- Setiap objek ESP memegang "rec" ({ bb, tl, bar, hl, ... }); helper ini yang membuat/memindah/menghapusnya.
--- Draw.label menghormati saklar utama Cfg.ShowLabels: bila mati, SEMUA label (pemain, zombie, objek) hilang.
+-- Draw.label menghormati saklar utama Cfg.ShowLabels: bila mati, SEMUA teks label (pemain, zombie, objek) hilang.
+-- Bar progres berdiri sendiri: tetap tampil walau teks label mati (text = nil), selama `bar` diberikan.
 local Hub = ...
 local Cfg = Hub.use("config/Config").Cfg
 local Kit = Hub.use("ui/Kit")
@@ -51,10 +52,10 @@ local function ensureBB(rec, w, h, off)
 end
 
 -- bar progres kecil di bawah teks: isi bergeser warna merah -> kuning -> hijau, ada kilau berjalan
-local function ensureBar(rec, h)
+local function ensureBar(rec)
     if rec.bar then return end
     local track = new("Frame", {
-        Name = "Bar", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, h + 3),
+        Name = "Bar", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 3),
         Size = UDim2.fromOffset(BAR_W, BAR_H), BackgroundColor3 = Color3.fromRGB(30, 26, 24), BorderSizePixel = 0,
     }, rec.bb)
     corner(track, 4)
@@ -97,22 +98,31 @@ local function placeHL(rec, adornee)
     if rec.hl.Parent ~= want then rec.hl.Parent = want end
 end
 
--- label teks di atas `part` (ukuran w x h px, naik `off` stud).
--- bar (opsional) = 0..1 -> tampilkan bar progres di bawah teks (animasi halus antar pembaruan)
+-- label di atas `part` (ukuran w x h px, naik `off` stud).
+--   text = nil          -> tanpa teks (hanya bar, bila ada)
+--   bar  = 0..1 (opsional) -> bar progres (di bawah teks, atau sendirian bila tanpa teks)
+-- Saklar utama Cfg.ShowLabels = mati menghapus TEKS semua ESP; bar tidak ikut mati.
 function Draw.label(rec, w, h, off, col, text, part, bar)
-    if not Cfg.ShowLabels then Draw.dropBB(rec) return end -- saklar utama label
+    if not Cfg.ShowLabels then text = nil end
+    if text == nil and bar == nil then Draw.dropBB(rec) return end
     ensureBB(rec, w, h, off)
-    rec.tl.TextColor3 = col
-    rec.tl.TextSize = Cfg.TextSize
-    rec.tl.Text = text
+    local hasText = text ~= nil
+    rec.tl.Visible = hasText
+    if hasText then
+        rec.tl.TextColor3 = col
+        rec.tl.TextSize = Cfg.TextSize
+        rec.tl.Text = text
+    end
+    local th = hasText and h or 0
     if bar ~= nil then
-        ensureBar(rec, h)
+        ensureBar(rec)
         bar = math.clamp(bar, 0, 1)
-        rec.bb.Size = UDim2.fromOffset(w, h + BAR_H + 6)
+        rec.bar.track.Position = UDim2.new(0.5, 0, 0, hasText and (h + 3) or 3)
+        rec.bb.Size = UDim2.fromOffset(w, th + BAR_H + 6)
         tween(rec.bar.fill, { Size = UDim2.new(bar, 0, 1, 0), BackgroundColor3 = barColor(bar) }, 0.3)
-    elseif rec.bar then
-        Draw.dropBar(rec)
-        rec.bb.Size = UDim2.fromOffset(w, h)
+    else
+        if rec.bar then Draw.dropBar(rec) end
+        rec.bb.Size = UDim2.fromOffset(w, th)
     end
     placeBB(rec, part)
 end
