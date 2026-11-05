@@ -38,6 +38,12 @@ local Cfg = {
     -- Dunia (HD grafis)
     HD = false, HDPreset = "Tinggi", HDContrast = 12, HDSaturation = 14, HDBloom = 25,
     HDShadows = true, HDQuality = true, HDMesh = false, HDFuture = false,
+    -- Dunia (shader ala post-processing: hanya visual di klien)
+    HDShader = "Realistic", HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = 0, HDExposure = 0,
+    HDShadowSoft = 10, HDVignette = 0,
+    HDDoF = false, HDDoFDist = 40, HDDoFRadius = 15, HDDoFFar = 30, HDDoFNear = 0,
+    HDAtmo = false, HDAtmoDensity = 30, HDAtmoHaze = 15, HDAtmoGlare = 10,
+    HDAtmoColor = Color3.fromRGB(199, 199, 199), HDAtmoDecay = Color3.fromRGB(106, 112, 125),
     -- Gerak
     Speed = false, SpeedVal = 24, SpeedSafe = true, Noclip = false, Fly = false, FlySpeed = 50,
     -- Violence District

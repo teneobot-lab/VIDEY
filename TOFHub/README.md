@@ -34,6 +34,7 @@ ui/tabs Dashboard, Aim, ESP (pemain + zombie + objek), World (+HD), Move, Violen
 - **Label**: `Cfg.ShowLabels` adalah saklar utama, dicek di `Draw.label` sehingga berlaku untuk SEMUA ESP (juga yang baru).
 - **Config**: `Config.save()/load()/reset()/delete()` (tab Settings > Config). `Cfg.AutoSave` = simpan otomatis 1 detik setelah perubahan.
 - **Layar loading**: `ui/Splash` tampil sebelum `BOOT`, progres diperbarui per modul lewat `Splash.step`, lalu `Splash.finish()` memanggil `Hub.ready()`. Kode yang perlu jalan setelah semua modul siap (mis. memunculkan window) daftar lewat `Hub.onReady(fn)`. Matikan lewat `Cfg.ShowSplash` (Settings > Tampilan).
+- **Shader HD**: `World.SHADERS` (features/World.lua) berisi preset; `World.applyShader(nama)` mengisi semua kunci `HD*` sekaligus. Tambah preset baru = tambah entri di `SHADERS` + namanya di `SHADER_NAMES`. Efek yang dipakai: ColorCorrection (tint/exposure), Bloom, SunRays, DepthOfField, Atmosphere, vignette (ScreenGui `TOFHD_Vignette`). Roblox tidak mendukung shader GLSL/HLSL kustom.
 - **Animasi**: helper di `ui/Kit` (`spring`, `pop`, `pressFx`, `loop`, `drive`); semua mengikuti `Cfg.UIAnim`.
 - **Fitur baru**: buat `features/Nama.lua` (logika + `Scheduler.add` + `Hub.onUnload`), tambah ke `BOOT`, lalu tabnya.
 - **Kontrol UI baru**: tambah `function Page:NamaBaru(...)` di `ui/Controls.lua`.
