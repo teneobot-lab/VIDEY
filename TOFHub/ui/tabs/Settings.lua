@@ -1,7 +1,6 @@
 -- Tab Settings: tampilan, config (simpan/muat), deteksi role, info, unload.
 local Hub = ...
 local Config = Hub.use("config/Config")
-local Scheduler = Hub.use("core/Scheduler")
 local Window = Hub.use("ui/Window")
 local Page = Hub.use("ui/Controls")
 local Theme = Hub.use("ui/Theme")
@@ -59,7 +58,7 @@ page:Button("Hapus file config", function()
     Window.toast(msg)
 end, "danger")
 
-Scheduler.add("Info config", 0.5, function()
+page:every("Info config", 0.5, function()
     local lines = { "File: " .. Config.FILE }
     if not Config.supported() then
         lines[#lines + 1] = "Executor tidak mendukung baca/tulis file, config tidak bisa disimpan"

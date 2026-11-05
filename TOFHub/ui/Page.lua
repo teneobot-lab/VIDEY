@@ -6,6 +6,7 @@ local Hub = ...
 local Cfg = Hub.use("config/Config").Cfg
 local Kit = Hub.use("ui/Kit")
 local Window = Hub.use("ui/Window")
+local Scheduler = Hub.use("core/Scheduler")
 local T, new, corner, lbl, tween, hoverFx, onAccent = Kit.T, Kit.new, Kit.corner, Kit.lbl, Kit.tween, Kit.hoverFx, Kit.onAccent
 local spring = Kit.spring
 
@@ -87,6 +88,13 @@ function Page.new(name)
 end
 
 function Page:next() self.n += 1 return self.n end
+
+-- tugas berkala milik tab: hanya jalan saat window tampil DAN tab ini yang terbuka (hemat CPU)
+function Page:every(name, interval, fn)
+    Scheduler.add(name, interval, function(dt)
+        if Window.isShown() and self.sf.Visible then fn(dt) end
+    end)
+end
 function Page:base() return self.bg or T.surface end
 function Page:inner() return (self.bg == T.raised) and T.surface or T.raised end
 

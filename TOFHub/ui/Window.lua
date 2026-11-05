@@ -1,7 +1,7 @@
 -- Window utama: panel, title bar (koin berputar, minimize/tutup), sidebar tab, area konten, resize, toast, keybind.
 -- Animasi ala Mario: window "muncul membal", koin berputar, garis bintang (star power) berjalan, toast membal.
 --   Window.sidebar / Window.content   wadah yang diisi ui/Page
---   Window.toast(msg)  Window.toggle()  Window.setVisible(on)  Window.resetSize()  Window.statLbl
+--   Window.toast(msg)  Window.toggle()  Window.setVisible(on)  Window.isShown()  Window.resetSize()  Window.statLbl
 local Hub = ...
 local UIS = game:GetService("UserInputService")
 local Config = Hub.use("config/Config")
@@ -9,9 +9,8 @@ local Cfg = Config.Cfg
 local Kit = Hub.use("ui/Kit")
 local Root = Hub.use("ui/Root")
 local T, new, corner, lbl = Kit.T, Kit.new, Kit.corner, Kit.lbl
-local tween, isPress, onAccent, Drag = Kit.tween, Kit.isPress, Kit.onAccent, Kit.Drag
+local tween, isPress, Drag = Kit.tween, Kit.isPress, Kit.Drag
 
-local Theme = Hub.use("ui/Theme")
 
 local TITLE_H = 36
 local MINW, MINH = 320, 220
@@ -267,6 +266,7 @@ function Window.setVisible(on)
 end
 
 function Window.toggle() Window.setVisible(not shown) end
+function Window.isShown() return shown end
 
 function Window.resetSize()
     fullW, fullH = clampSize(Config.Default.W, Config.Default.H)

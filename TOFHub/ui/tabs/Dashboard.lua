@@ -1,17 +1,16 @@
 -- Tab Dashboard: statistik langsung, role pemain, kontrol cepat, perbaikan, diagnostik.
--- update() dijalankan Scheduler tiap 0.5 detik.
+-- update() dijalankan tiap 0.5 detik hanya saat tab ini terbuka (Page:every).
 local Hub = ...
 local Players = game:GetService("Players")
-local Stats = game:GetService("Stats")
 local LP = Players.LocalPlayer
 local Config = Hub.use("config/Config")
 local Cfg, reg, setCfg = Config.Cfg, Config.reg, Config.set
 local Util = Hub.use("core/Util")
 local Scheduler = Hub.use("core/Scheduler")
+local Perf = Hub.use("features/Perf")
 local Roles = Hub.use("core/Roles")
 local Aim = Hub.use("features/Aim")
 local SkillScan = Hub.use("features/SkillScan")
-local Move = Hub.use("features/Movement")
 local ESP = Hub.use("esp/Players")
 local Zom = Hub.use("esp/Zombies")
 local Window = Hub.use("ui/Window")
@@ -72,15 +71,13 @@ local infoDiag = page:Info("...")
 --------------------------------------------------------
 -- Pembaruan berkala (dipecah per bagian)
 --------------------------------------------------------
-local function updateTiles(ping)
-    local fps = Scheduler.fps
-    tiles.fps.Text = tostring(math.floor(fps))
-    tiles.ping.Text = ping .. " ms"
+local function updateTiles()
+    tiles.fps.Text = tostring(math.floor(Perf.fps))
+    tiles.ping.Text = Perf.ping .. " ms"
     tiles.players.Text = tostring(#Players:GetPlayers())
     local k1 = Roles.killers[1]
     tiles.killer.Text = k1 and k1.DisplayName or "-"
     tiles.killer.TextColor3 = k1 and Cfg.KillerColor or T.muted
-    Window.statLbl.Text = ("%d fps · %s ms"):format(math.floor(fps), ping)
 end
 
 local function updateRoles()
@@ -125,14 +122,16 @@ local function updateDiag()
 end
 
 local function update()
-    local ping = "-"
-    pcall(function() ping = tostring(math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())) end)
-    updateTiles(ping)
+    updateTiles()
     updateRoles()
     updateTOF()
     updateDiag()
 end
 
-Scheduler.add("Dashboard", 0.5, update)
+-- statistik di title bar tampil di semua tab, sisanya hanya saat tab Dashboard terbuka
+Scheduler.add("Statistik window", 0.5, function()
+    if Window.isShown() then Window.statLbl.Text = ("%d fps · %d ms"):format(math.floor(Perf.fps), Perf.ping) end
+end)
+page:every("Dashboard", 0.5, update)
 
 return { page = page }

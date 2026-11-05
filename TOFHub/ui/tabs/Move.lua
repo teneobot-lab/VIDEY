@@ -1,6 +1,5 @@
 -- Tab Gerak: speed, noclip, fly.
 local Hub = ...
-local Scheduler = Hub.use("core/Scheduler")
 local Move = Hub.use("features/Movement")
 local Page = Hub.use("ui/Controls")
 
@@ -18,7 +17,7 @@ page:Toggle("Terbang (Fly)", "Fly")
 page:Slider("Kecepatan terbang (bisa diketik)", "FlySpeed", 10, 200, 5, "")
 page:Info("Server melihat posisi karakter, jadi speed/noclip/fly bisa ditandai atau dikembalikan. Mulai dari nilai kecil.")
 
-Scheduler.add("Info gerak", 0.5, function()
+page:every("Info gerak", 0.5, function()
     infoSpeed.Text = "Status speed: " .. Move.status
 end)
 

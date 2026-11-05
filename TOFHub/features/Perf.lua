@@ -10,6 +10,7 @@ local Stats = game:GetService("Stats")
 local Config = Hub.use("config/Config")
 local Cfg = Config.Cfg
 local Scheduler = Hub.use("core/Scheduler")
+local Util = Hub.use("core/Util")
 
 local Perf = { fps = 60, minFps = 60, ping = 0, mem = 0, count = 0, status = "mati" }
 
@@ -47,11 +48,6 @@ Perf.boost = B
 local LIGHT_PROPS = { "GlobalShadows" }
 local TERRAIN_PROPS = { "Decoration", "WaterWaveSize", "WaterWaveSpeed", "WaterReflectance" }
 local PARTICLES = { "ParticleEmitter", "Trail", "Beam", "Smoke", "Fire", "Sparkles" }
-
-local function rendering()
-    local ok, r = pcall(function() return settings().Rendering end)
-    return ok and r or nil
-end
 
 local function save(inst, prop)
     local d = B.inst[inst]
@@ -94,7 +90,7 @@ end
 local function applyGlobals()
     local s = B.saved
     pcall(function() Lighting.GlobalShadows = not Cfg.BoostShadows and s.GlobalShadows or false end)
-    local r = rendering()
+    local r = Util.rendering()
     if r then
         pcall(function()
             if Cfg.BoostQuality then
@@ -136,7 +132,7 @@ local function boostOff()
         for _, k in ipairs(LIGHT_PROPS) do
             if s[k] ~= nil then pcall(function() Lighting[k] = s[k] end) end
         end
-        local r = rendering()
+        local r = Util.rendering()
         if r then
             if s.Quality ~= nil then pcall(function() r.QualityLevel = s.Quality end) end
             if s.MeshDetail ~= nil then pcall(function() r.MeshPartDetailLevel = s.MeshDetail end) end
@@ -161,7 +157,7 @@ end
 local function boostOn()
     local s = {}
     for _, k in ipairs(LIGHT_PROPS) do pcall(function() s[k] = Lighting[k] end) end
-    local r = rendering()
+    local r = Util.rendering()
     if r then
         pcall(function() s.Quality = r.QualityLevel end)
         pcall(function() s.MeshDetail = r.MeshPartDetailLevel end)
@@ -182,16 +178,9 @@ local function boostOn()
     B.conn = Hub.track(workspace.DescendantAdded:Connect(function(d)
         if B.on and not Hub.Dead then proc(d) end
     end))
-    task.spawn(function()
-        local n = 0
-        for _, d in ipairs(workspace:GetDescendants()) do
-            if tok ~= B.tok or Hub.Dead then return end
-            proc(d)
-            n += 1
-            if n % 1500 == 0 then task.wait() end
-        end
-        if tok == B.tok then Perf.status = "aktif" end
-    end)
+    Util.eachDescendant(workspace, proc,
+        function() return tok == B.tok and not Hub.Dead end,
+        function() Perf.status = "aktif" end)
 end
 
 function Perf.refresh()

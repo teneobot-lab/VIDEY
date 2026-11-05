@@ -41,7 +41,7 @@ local Cfg = {
     Fullbright = false, Bright = 2, AmbientColor = Color3.fromRGB(210, 210, 210),
     ForceTime = false, Time = 14, NoFog = true, NoFx = false,
     -- Dunia (HD grafis)
-    HD = false, HDPreset = "Tinggi", HDContrast = 12, HDSaturation = 14, HDBloom = 25,
+    HD = false, HDContrast = 12, HDSaturation = 14, HDBloom = 25, HDSun = 5,
     HDShadows = true, HDQuality = true, HDMesh = false, HDFuture = false,
     -- Dunia (shader ala post-processing: hanya visual di klien)
     HDShader = "Realistic", HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = 0, HDExposure = 0,

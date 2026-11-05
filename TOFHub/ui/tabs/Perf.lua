@@ -1,7 +1,6 @@
 -- Tab Performa: statistik FPS/ping, HUD, FPS Booster, batas FPS.
 local Hub = ...
 local Config = Hub.use("config/Config")
-local Scheduler = Hub.use("core/Scheduler")
 local Perf = Hub.use("features/Perf")
 local Page = Hub.use("ui/Controls")
 
@@ -36,7 +35,7 @@ else
     page:Info("Executor ini tidak punya setfpscap, batas FPS tidak bisa diubah.")
 end
 
-Scheduler.add("Info performa", 0.5, function()
+page:every("Info performa", 0.5, function()
     tiles.fps.Text = tostring(math.floor(Perf.fps))
     tiles.min.Text = tostring(math.floor(Perf.minFps))
     tiles.ping.Text = Perf.ping .. " ms"

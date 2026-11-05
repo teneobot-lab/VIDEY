@@ -8,6 +8,7 @@ local Lighting = game:GetService("Lighting")
 local Config = Hub.use("config/Config")
 local Cfg = Config.Cfg
 local Scheduler = Hub.use("core/Scheduler")
+local Util = Hub.use("core/Util")
 
 local World = { saved = nil, fx = {} }
 
@@ -66,65 +67,48 @@ function World.fxScan()
 end
 
 --------------------------------------------------------
--- Mode HD: koreksi warna (kontras/saturasi), bloom, sun rays, bayangan tajam,
--- kualitas render maksimum, detail mesh maksimum, dan (opsional) Future lighting.
---------------------------------------------------------
-World.PRESETS = {
-    Sedang = { HDContrast = 6, HDSaturation = 8, HDBloom = 15 },
-    Tinggi = { HDContrast = 12, HDSaturation = 14, HDBloom = 25 },
-    Ultra = { HDContrast = 20, HDSaturation = 20, HDBloom = 40 },
-}
-World.PRESET_NAMES = { "Sedang", "Tinggi", "Ultra" }
-local SUN = { Sedang = 0, Tinggi = 0.05, Ultra = 0.1 }
-
-function World.applyPreset(name)
-    local p = World.PRESETS[name]
-    if not p then return end
-    for k, v in pairs(p) do Config.set(k, v) end
-end
-
 --------------------------------------------------------
 -- Preset "shader": satu tap mengisi semua nilai HD sekaligus (tetap bisa diubah per slider)
 --------------------------------------------------------
 local HD_KEYS = {
-    "HD", "HDPreset", "HDContrast", "HDSaturation", "HDBloom", "HDShadows", "HDQuality", "HDMesh", "HDFuture",
+    "HD", "HDContrast", "HDSaturation", "HDBloom", "HDSun", "HDShadows", "HDQuality", "HDMesh", "HDFuture",
     "HDShader", "HDTint", "HDBrightness", "HDExposure", "HDShadowSoft", "HDVignette",
     "HDDoF", "HDDoFDist", "HDDoFRadius", "HDDoFFar", "HDDoFNear",
     "HDAtmo", "HDAtmoDensity", "HDAtmoHaze", "HDAtmoGlare", "HDAtmoColor", "HDAtmoDecay",
 }
 World.SHADERS = {
     Realistic = {
-        HDContrast = 10, HDSaturation = 6, HDBloom = 15, HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = 0, HDExposure = 0.1,
+        HDContrast = 10, HDSaturation = 6, HDBloom = 15, HDSun = 5, HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = 0, HDExposure = 0.1,
         HDShadows = true, HDShadowSoft = 20, HDVignette = 15, HDDoF = false,
         HDAtmo = true, HDAtmoDensity = 25, HDAtmoHaze = 15, HDAtmoGlare = 10, HDAtmoColor = Color3.fromRGB(199, 199, 199), HDAtmoDecay = Color3.fromRGB(106, 112, 125),
     },
     Cinematic = {
-        HDContrast = 18, HDSaturation = 4, HDBloom = 30, HDTint = Color3.fromRGB(255, 240, 225), HDBrightness = -3, HDExposure = -0.1,
+        HDContrast = 18, HDSaturation = 4, HDBloom = 30, HDSun = 10, HDTint = Color3.fromRGB(255, 240, 225), HDBrightness = -3, HDExposure = -0.1,
         HDShadows = true, HDShadowSoft = 15, HDVignette = 45,
         HDDoF = true, HDDoFDist = 40, HDDoFRadius = 15, HDDoFFar = 40, HDDoFNear = 0,
         HDAtmo = true, HDAtmoDensity = 30, HDAtmoHaze = 20, HDAtmoGlare = 30, HDAtmoColor = Color3.fromRGB(210, 200, 190), HDAtmoDecay = Color3.fromRGB(120, 100, 90),
     },
     Vibrant = {
-        HDContrast = 14, HDSaturation = 30, HDBloom = 35, HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = 3, HDExposure = 0.2,
+        HDContrast = 14, HDSaturation = 30, HDBloom = 35, HDSun = 8, HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = 3, HDExposure = 0.2,
         HDShadows = true, HDShadowSoft = 10, HDVignette = 10, HDDoF = false, HDAtmo = false,
     },
     Dark = {
-        HDContrast = 25, HDSaturation = 0, HDBloom = 20, HDTint = Color3.fromRGB(215, 225, 255), HDBrightness = -8, HDExposure = -0.5,
+        HDContrast = 25, HDSaturation = 0, HDBloom = 20, HDSun = 0, HDTint = Color3.fromRGB(215, 225, 255), HDBrightness = -8, HDExposure = -0.5,
         HDShadows = true, HDShadowSoft = 5, HDVignette = 60, HDDoF = false,
         HDAtmo = true, HDAtmoDensity = 40, HDAtmoHaze = 10, HDAtmoGlare = 0, HDAtmoColor = Color3.fromRGB(90, 95, 110), HDAtmoDecay = Color3.fromRGB(40, 45, 60),
     },
     Warm = {
-        HDContrast = 10, HDSaturation = 12, HDBloom = 25, HDTint = Color3.fromRGB(255, 225, 190), HDBrightness = 2, HDExposure = 0.15,
+        HDContrast = 10, HDSaturation = 12, HDBloom = 25, HDSun = 10, HDTint = Color3.fromRGB(255, 225, 190), HDBrightness = 2, HDExposure = 0.15,
         HDShadows = true, HDShadowSoft = 25, HDVignette = 20, HDDoF = false,
         HDAtmo = true, HDAtmoDensity = 25, HDAtmoHaze = 10, HDAtmoGlare = 20, HDAtmoColor = Color3.fromRGB(230, 200, 160), HDAtmoDecay = Color3.fromRGB(150, 110, 80),
     },
     Cold = {
-        HDContrast = 12, HDSaturation = 8, HDBloom = 20, HDTint = Color3.fromRGB(200, 220, 255), HDBrightness = 0, HDExposure = 0,
+        HDContrast = 12, HDSaturation = 8, HDBloom = 20, HDSun = 3, HDTint = Color3.fromRGB(200, 220, 255), HDBrightness = 0, HDExposure = 0,
         HDShadows = true, HDShadowSoft = 15, HDVignette = 20, HDDoF = false,
         HDAtmo = true, HDAtmoDensity = 30, HDAtmoHaze = 15, HDAtmoGlare = 5, HDAtmoColor = Color3.fromRGB(180, 200, 230), HDAtmoDecay = Color3.fromRGB(80, 100, 140),
     },
     Noir = {
-        HDContrast = 30, HDSaturation = -100, HDBloom = 15, HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = -2, HDExposure = -0.2,
+        HDContrast = 30, HDSaturation = -100, HDBloom = 15, HDSun = 0, HDTint = Color3.fromRGB(255, 255, 255), HDBrightness = -2, HDExposure = -0.2,
         HDShadows = true, HDShadowSoft = 10, HDVignette = 70, HDDoF = false,
         HDAtmo = true, HDAtmoDensity = 35, HDAtmoHaze = 20, HDAtmoGlare = 0, HDAtmoColor = Color3.fromRGB(150, 150, 150), HDAtmoDecay = Color3.fromRGB(60, 60, 60),
     },
@@ -169,11 +153,6 @@ local function ensureFx(class, name)
     return o
 end
 
-local function rendering()
-    local ok, r = pcall(function() return settings().Rendering end)
-    return ok and r or nil
-end
-
 local function meshHD(d)
     if HD.mesh[d] == nil then
         local ok, v = pcall(function() return d.RenderFidelity end)
@@ -188,15 +167,9 @@ local function setMesh(on)
     local tok = HD.scanTok
     HD.meshOn = on
     if on then
-        task.spawn(function()
-            local n = 0
-            for _, d in ipairs(workspace:GetDescendants()) do
-                if tok ~= HD.scanTok or Hub.Dead then return end
-                if d:IsA("MeshPart") then meshHD(d) end
-                n += 1
-                if n % 1500 == 0 then task.wait() end
-            end
-        end)
+        Util.eachDescendant(workspace, function(d)
+            if d:IsA("MeshPart") then meshHD(d) end
+        end, function() return tok == HD.scanTok and not Hub.Dead end)
     else
         for part, fid in pairs(HD.mesh) do
             pcall(function() if part.Parent then part.RenderFidelity = fid end end)
@@ -324,7 +297,7 @@ function World.hdOff()
         for _, k in ipairs(LIGHT_PROPS) do
             if s[k] ~= nil then pcall(function() Lighting[k] = s[k] end) end
         end
-        local r = rendering()
+        local r = Util.rendering()
         if r and s.Quality ~= nil then pcall(function() r.QualityLevel = s.Quality end) end
     end
     HD.saved = nil
@@ -338,7 +311,7 @@ function World.applyHD()
     if not HD.saved then
         local s = {}
         for _, k in ipairs(LIGHT_PROPS) do pcall(function() s[k] = Lighting[k] end) end
-        local r = rendering()
+        local r = Util.rendering()
         if r then pcall(function() s.Quality = r.QualityLevel end) end
         if gethiddenproperty then pcall(function() s.Tech = gethiddenproperty(Lighting, "Technology") end) end
         HD.saved = s
@@ -354,10 +327,9 @@ function World.applyHD()
     bloom.Intensity = Cfg.HDBloom / 100
     bloom.Size = 20
     bloom.Threshold = 1.1
-    local sunI = SUN[Cfg.HDPreset] or 0
     local sun = ensureFx("SunRaysEffect", "TOFHD_Sun")
-    sun.Enabled = sunI > 0
-    sun.Intensity, sun.Spread = sunI, 0.6
+    sun.Enabled = Cfg.HDSun > 0
+    sun.Intensity, sun.Spread = Cfg.HDSun / 100, 0.6
 
     -- lensa: depth of field (blur latar seperti kamera)
     local dof = ensureFx("DepthOfFieldEffect", "TOFHD_DoF")
@@ -380,7 +352,7 @@ function World.applyHD()
     end)
 
     -- kualitas render
-    local r = rendering()
+    local r = Util.rendering()
     if r and HD.saved.Quality ~= nil then
         pcall(function()
             local want = Cfg.HDQuality and Enum.QualityLevel.Level21 or HD.saved.Quality

@@ -34,6 +34,27 @@ function Util.topName(inst)
     return p.Name
 end
 
+-- settings().Rendering (nil bila executor tidak mengizinkan)
+function Util.rendering()
+    local ok, r = pcall(function() return settings().Rendering end)
+    return ok and r or nil
+end
+
+-- panggil fn(d) untuk tiap descendant root, yield tiap 1500 objek supaya tidak nge-lag;
+-- alive() dipanggil tiap objek, kembalikan false untuk membatalkan. Jalan di thread sendiri.
+function Util.eachDescendant(root, fn, alive, done)
+    task.spawn(function()
+        local n = 0
+        for _, d in ipairs(root:GetDescendants()) do
+            if not alive() then return end
+            fn(d)
+            n += 1
+            if n % 1500 == 0 then task.wait() end
+        end
+        if done and alive() then done() end
+    end)
+end
+
 -- escape untuk RichText
 function Util.esc(s)
     s = tostring(s)

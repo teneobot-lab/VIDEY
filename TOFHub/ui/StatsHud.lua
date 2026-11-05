@@ -6,6 +6,7 @@ local Kit = Hub.use("ui/Kit")
 local Root = Hub.use("ui/Root")
 local Scheduler = Hub.use("core/Scheduler")
 local Perf = Hub.use("features/Perf")
+local Util = Hub.use("core/Util")
 local new, corner, lbl = Kit.new, Kit.corner, Kit.lbl
 local Drag = Kit.Drag
 
@@ -26,7 +27,6 @@ txt.Size, txt.AutomaticSize = UDim2.new(0, 0, 1, 0), Enum.AutomaticSize.X
 txt.TextYAlignment = Enum.TextYAlignment.Center
 txt.RichText = true
 
-local function hex(c) return ("#%02X%02X%02X"):format(math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5)) end
 local function col(v, good, warn, invert)
     if invert then
         return v <= good and GOOD or v <= warn and WARN or BAD
@@ -38,7 +38,7 @@ Scheduler.add("StatsHud", 0.5, function()
     if not hud.Visible then return end
     local fps, ping = math.floor(Perf.fps), Perf.ping
     txt.Text = ("<font color=\"%s\">%d fps</font> · <font color=\"%s\">%d ms</font> · %d MB"):format(
-        hex(col(fps, 50, 30)), fps, hex(col(ping, 80, 150, true)), ping, Perf.mem)
+        "#" .. Util.hex(col(fps, 50, 30)), fps, "#" .. Util.hex(col(ping, 80, 150, true)), ping, Perf.mem)
 end)
 
 Config.reg("ShowStats", function()

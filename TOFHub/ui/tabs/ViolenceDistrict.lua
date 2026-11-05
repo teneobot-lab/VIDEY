@@ -2,7 +2,6 @@
 local Hub = ...
 Hub.use("features/AutoSkillCheck")
 local FV = Hub.use("features/FastVault")
-local Scheduler = Hub.use("core/Scheduler")
 local Window = Hub.use("ui/Window")
 local Page = Hub.use("ui/Controls")
 
@@ -29,7 +28,7 @@ page:Button("Bersihkan daftar animasi", function()
     Window.toast("Daftar animasi dibersihkan")
 end)
 page:Info("Atribut: mengalikan atribut karakter vaultspeed (cara bawaan game). Animasi: mempercepat animasi vault langsung (kata kunci default \"vault\" cocok dengan RunningVaultAnimation). Bila satu metode tidak terasa, coba yang lain. Server tetap menerima sinyal vault lebih cepat dari biasanya, jadi pakai 1.5x dulu (server membatasi kecepatan vault ~30 stud/dtk). Paksa vault fast: argumen tier di VaultEvent diganti \"fast\" walau kamu tidak sedang lari; bila server menolak/macet, matikan.")
-Scheduler.add("Info vault", 0.5, function()
+page:every("Info vault", 0.5, function()
     local recent = #FV.recent > 0 and table.concat(FV.recent, ", ") or "-"
     infoVault.Text = "Status: " .. FV.status .. "\nHook tier: " .. (FV.hooked and ("aktif, dipaksa " .. FV.forced .. "x") or "tidak didukung executor") .. "\nAnimasi terakhir (sekali putar): " .. recent
 end)

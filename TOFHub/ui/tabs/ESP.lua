@@ -3,7 +3,6 @@
 local Hub = ...
 local Config = Hub.use("config/Config")
 local Cats = Hub.use("config/Categories")
-local Scheduler = Hub.use("core/Scheduler")
 local Zom = Hub.use("esp/Zombies")
 local Obj = Hub.use("esp/Objects")
 local Window = Hub.use("ui/Window")
@@ -55,7 +54,7 @@ for _, c in ipairs(OBJ_GROUPS) do CategoryGroup(page, c) end
 page:Section("Objek terdeteksi")
 local infoObj = page:Info("...")
 
-Scheduler.add("Info objek", 0.5, function()
+page:every("Info objek", 0.5, function()
     local counts = {}
     for _, g in ipairs(OBJ_GROUPS) do counts[g.id] = 0 end
     for _, rec in pairs(Obj.tracked) do counts[rec.g.id] += 1 end
