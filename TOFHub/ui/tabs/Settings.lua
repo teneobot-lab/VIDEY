@@ -32,7 +32,7 @@ page:Button("Reset semua warna", function()
 end)
 
 page:Section("Config")
-page:Toggle("Simpan otomatis", "AutoSave")
+page:Toggle("Simpan otomatis (tiap perubahan)", "AutoSave")
 local infoCfg = page:Info("...")
 page:Button("Simpan config sekarang", function()
     local ok, msg = Config.save()
@@ -65,6 +65,7 @@ Scheduler.add("Info config", 0.5, function()
         lines[#lines + 1] = "Executor tidak mendukung baca/tulis file, config tidak bisa disimpan"
     else
         lines[#lines + 1] = Config.exists() and "File config: ada" or "File config: belum dibuat"
+        if Config.loadInfo then lines[#lines + 1] = "Saat start: " .. Config.loadInfo.msg end
         lines[#lines + 1] = Config.dirty and "Status: ada perubahan belum tersimpan" or "Status: tersimpan"
         if Config.lastSave then
             lines[#lines + 1] = ("Terakhir disimpan: %d detik lalu"):format(os.time() - Config.lastSave)
@@ -76,7 +77,18 @@ end)
 page:Section("Deteksi role")
 page:Slider("Jumlah killer", "KillerCount", 1, 3, 1, "")
 page:Section("Info")
-page:Info("RightShift: tampil/sembunyi window\nTombol ? melayang: tap buka/tutup, geser untuk pindah\nTombol – : minimize | ◢ : ubah ukuran\nAngka di slider bisa diketik\nSimpan otomatis aktif: perubahan tersimpan 1 detik setelah diubah. Matikan bila ingin menyimpan manual.")
+page:Info("RightShift: tampil/sembunyi window\nTombol ? melayang: tap buka/tutup, geser untuk pindah\nTombol – : minimize | ◢ : ubah ukuran\nAngka di slider bisa diketik\nSimpan otomatis aktif: perubahan tersimpan 1 detik setelah diubah dan dimuat lagi otomatis tiap script dijalankan. Matikan bila ingin menyimpan manual.")
+
+-- beri tahu hasil muat otomatis begitu window tampil
+Hub.onReady(function()
+    local li = Config.loadInfo
+    if not li then return end
+    if li.ok then
+        Window.toast(li.msg)
+    elseif Config.supported() and Config.exists() then
+        Window.toast("Config tidak dimuat: " .. tostring(li.msg))
+    end
+end)
 page:Section("Script")
 page:Button("Unload", function() Hub.unload() end, "danger")
 
