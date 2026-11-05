@@ -282,10 +282,10 @@ Hub.track(UIS.InputBegan:Connect(function(i, gpe)
     if not gpe and i.KeyCode == Enum.KeyCode.RightShift then Window.toggle() end
 end))
 
--- muncul pertama kali: dimulai tersembunyi lalu "pop" setelah semua tab selesai dibuat
+-- muncul pertama kali: dimulai tersembunyi lalu "pop" setelah semua modul siap (layar loading hilang)
 shown = false
 win.Visible = false
-task.defer(function()
+Hub.onReady(function()
     if not Hub.Dead then Window.setVisible(true) end
 end)
 

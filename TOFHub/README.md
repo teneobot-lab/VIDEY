@@ -16,7 +16,7 @@ config/ Categories  daftar kategori ESP (data)
         Config      nilai awal, simpan/muat JSON, Config.set / Config.reg
 features/ Aim, World, Movement      logika fitur (tanpa UI)
 esp/    Draw, Players, Zombies, Objects
-ui/     Kit (helper + animasi ala Mario), Theme, Root, Window, FovCircle, FloatButton,
+ui/     Kit (helper + animasi ala Mario), Theme, Root, Splash (layar loading saat start), Window, FovCircle, FloatButton,
         Page (tab+layout), Controls (Toggle/Slider/...), CategoryGroup
 ui/tabs Dashboard, Aim, ESP (pemain + zombie + objek), World (+HD), Move, ViolenceDistrict, Settings (+Config)
 ```
@@ -33,6 +33,7 @@ ui/tabs Dashboard, Aim, ESP (pemain + zombie + objek), World (+HD), Move, Violen
 - **Objek ESP baru**: tambah satu baris di `config/Categories.lua`; teks khusus (opsional) di `LABEL_HOOKS` (`esp/Objects.lua`). Hook boleh mengembalikan `teks, bar(0..1)` untuk menampilkan bar progres.
 - **Label**: `Cfg.ShowLabels` adalah saklar utama, dicek di `Draw.label` sehingga berlaku untuk SEMUA ESP (juga yang baru).
 - **Config**: `Config.save()/load()/reset()/delete()` (tab Settings > Config). `Cfg.AutoSave` = simpan otomatis 1 detik setelah perubahan.
+- **Layar loading**: `ui/Splash` tampil sebelum `BOOT`, progres diperbarui per modul lewat `Splash.step`, lalu `Splash.finish()` memanggil `Hub.ready()`. Kode yang perlu jalan setelah semua modul siap (mis. memunculkan window) daftar lewat `Hub.onReady(fn)`. Matikan lewat `Cfg.ShowSplash` (Settings > Tampilan).
 - **Animasi**: helper di `ui/Kit` (`spring`, `pop`, `pressFx`, `loop`, `drive`); semua mengikuti `Cfg.UIAnim`.
 - **Fitur baru**: buat `features/Nama.lua` (logika + `Scheduler.add` + `Hub.onUnload`), tambah ke `BOOT`, lalu tabnya.
 - **Kontrol UI baru**: tambah `function Page:NamaBaru(...)` di `ui/Controls.lua`.

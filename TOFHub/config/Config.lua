@@ -46,7 +46,7 @@ local Cfg = {
     VDFastVault = false, VDVaultMult = 1.5, VDVaultForce = true, VDVaultAnim = true, VDVaultMode = "Atribut", VDVaultKeys = "vault",
     -- GUI
     Accent = Color3.fromRGB(124, 106, 255), Theme = "Overworld", ShowFloat = true, W = 420, H = 320,
-    UIAnim = true,
+    UIAnim = true, ShowSplash = true, -- ShowSplash: layar loading saat script pertama dijalankan
     -- Config
     AutoSave = true,
 }
