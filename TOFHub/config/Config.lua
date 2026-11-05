@@ -8,7 +8,12 @@
 --   Config.reset()      kembalikan semua ke default
 --   Config.delete()     hapus file config                -> ok, pesan
 --   Config.serialize()  config sebagai string JSON (untuk disalin)
+--   Config.flush()      simpan sekarang bila ada perubahan tertunda (dipanggil saat unload/teleport)
 --   Config.dirty        true bila ada perubahan yang belum tersimpan ke file
+--   Config.loadInfo     hasil muat otomatis saat start: { ok, msg, n } (n = jumlah opsi yang dimuat)
+-- Simpan otomatis: tiap perubahan lewat set() -> markDirty() -> tersimpan 1 detik setelah perubahan terakhir
+--   (bila Cfg.AutoSave). Muat otomatis: file dibaca saat modul ini dimuat (sebelum UI dibuat); versi lama
+--   tetap dimuat untuk kunci yang masih ada (migrasi), kunci baru memakai default.
 -- Opsi baru: tambah di tabel Cfg di bawah (kelompokkan per fitur).
 local Hub = ...
 local Http = game:GetService("HttpService")
@@ -69,7 +74,7 @@ end
 local Default = {}
 for k, v in pairs(Cfg) do Default[k] = v end
 
-local Config = { Cfg = Cfg, Default = Default, FILE = FILE, dirty = false, lastSave = nil }
+local Config = { Cfg = Cfg, Default = Default, FILE = FILE, dirty = false, lastSave = nil, loadInfo = nil }
 local Refresh = {}
 
 --------------------------------------------------------
@@ -118,12 +123,21 @@ function Config.markDirty()
     end)
 end
 
+-- simpan sekarang bila masih ada perubahan tertunda (tanpa menunggu debounce)
+function Config.flush()
+    if not (Config.dirty and Cfg.AutoSave and writefile) then return false end
+    saveToken += 1
+    local ok = pcall(Config.save)
+    return ok
+end
+
 local function readData()
     if not Config.exists() then return nil, "file config belum ada" end
     local ok, data = pcall(function() return Http:JSONDecode(readfile(FILE)) end)
     if not (ok and type(data) == "table") then return nil, "file config rusak" end
-    -- config versi lama dilewati supaya default baru terpakai
-    if data.Ver ~= Cfg.Ver then return nil, "versi config berbeda" end
+    -- versi lama tetap dimuat: applyData hanya mengambil kunci yang masih ada dan bertipe sama,
+    -- kunci baru memakai default, lalu file ditulis ulang dengan Ver sekarang
+    if data.Ver ~= Cfg.Ver then data._migrated = tostring(data.Ver) end
     return data
 end
 
@@ -131,7 +145,7 @@ end
 local function applyData(data, silent)
     local n = 0
     for k, v in pairs(data) do
-        if Cfg[k] ~= nil and k ~= "ManualKiller" and k ~= "Ver" then
+        if Cfg[k] ~= nil and k ~= "ManualKiller" and k ~= "Ver" and k ~= "_migrated" then
             local nv
             if typeof(Cfg[k]) == "Color3" then
                 nv = Util.parseHex(v)
@@ -185,15 +199,37 @@ function Config.set(key, v, silent)
     if not silent then Config.markDirty() end
 end
 
--- muat saat startup (UI belum dibuat, jadi tanpa refresh)
+-- muat otomatis saat startup (UI belum dibuat, jadi tanpa refresh)
 do
-    local data = readData()
-    if data then applyData(data, true) end
+    local data, err = readData()
+    if data then
+        local n = applyData(data, true)
+        local msg = ("Config dimuat (%d opsi)"):format(n)
+        if data._migrated then
+            msg = msg .. (", dimigrasi dari versi %s"):format(data._migrated)
+            Config.markDirty() -- tulis ulang dengan Ver sekarang + kunci baru
+        end
+        Config.loadInfo = { ok = true, msg = msg, n = n }
+    else
+        Config.loadInfo = { ok = false, msg = err, n = 0 }
+    end
+    print("[TOFHub] " .. Config.loadInfo.msg)
 end
 
--- simpan perubahan yang tertunda saat script di-unload
+-- saat AutoSave dinyalakan kembali, langsung simpan perubahan yang tertunda
+Config.reg("AutoSave", function()
+    if Cfg.AutoSave and Config.dirty then Config.save() end
+end)
+
+-- simpan perubahan yang tertunda saat script di-unload atau sebelum teleport antar server
 Hub.onUnload(function()
     if Config.dirty and Cfg.AutoSave then pcall(Config.save) end
 end)
+do
+    local plr = game:GetService("Players").LocalPlayer
+    if plr then
+        Hub.track(plr.OnTeleport:Connect(function() Config.flush() end))
+    end
+end
 
 return Config
