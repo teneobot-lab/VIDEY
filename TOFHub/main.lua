@@ -81,6 +81,17 @@ function Hub.use(name)
     return res
 end
 
+-- daftarkan fungsi yang dijalankan saat semua modul selesai dimuat (setelah layar loading hilang)
+Hub.readyFns = {}
+function Hub.onReady(fn)
+    if Hub.isReady then task.defer(fn) else Hub.readyFns[#Hub.readyFns + 1] = fn end
+end
+function Hub.ready()
+    if Hub.isReady or Hub.Dead then return end
+    Hub.isReady = true
+    for _, fn in ipairs(Hub.readyFns) do Hub.safe("ready", fn) end
+end
+
 function Hub.unload()
     if Hub.Dead then return end
     Hub.Dead = true
@@ -104,12 +115,27 @@ local BOOT = {
     "ui/FloatButton",
 }
 
+-- layar loading (ui/Splash) tampil lebih dulu; bar progres bergerak tiap modul dimuat
+local Splash = nil
+if Hub.use("config/Config").Cfg.ShowSplash ~= false then
+    local okS, res = pcall(Hub.use, "ui/Splash")
+    if okS then Splash = res else warn("[TOFHub] Splash dilewati: " .. tostring(res)) end
+end
+
 local ok, err = pcall(function()
-    for _, name in ipairs(BOOT) do Hub.use(name) end
+    for i, name in ipairs(BOOT) do
+        if Splash then
+            Splash.step(i, #BOOT, name)
+            task.wait() -- beri satu frame supaya progres sempat digambar
+        end
+        Hub.use(name)
+    end
     local Page = Hub.use("ui/Page")
     Page.select(Page.list[1])
+    if Splash then Splash.finish() else Hub.ready() end
 end)
 if not ok then
     warn("[TOFHub] gagal start: " .. tostring(err))
+    if Splash then pcall(Splash.fail, err) end
     Hub.unload()
 end
