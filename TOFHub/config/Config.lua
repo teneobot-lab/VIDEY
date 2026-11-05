@@ -2,7 +2,7 @@
 --   Config.Cfg          tabel nilai aktif (baca langsung: Cfg.FOV)
 --   Config.Default      salinan nilai awal
 --   Config.set(k,v[,s]) ubah nilai + segarkan UI + simpan otomatis (s = true: jangan tandai berubah)
---   Config.reg(k,f)     daftarkan fungsi yang dipanggil tiap Cfg[k] berubah lewat set()
+--   Config.reg(k,f[,first]) daftarkan fungsi yang dipanggil tiap Cfg[k] berubah lewat set() (first: jalan paling awal)
 --   Config.save()       simpan SEKARANG ke file          -> ok, pesan
 --   Config.load()       muat dari file + segarkan UI     -> ok, pesan
 --   Config.reset()      kembalikan semua ke default
@@ -49,6 +49,10 @@ local Cfg = {
     HDDoF = false, HDDoFDist = 40, HDDoFRadius = 15, HDDoFFar = 30, HDDoFNear = 0,
     HDAtmo = false, HDAtmoDensity = 30, HDAtmoHaze = 15, HDAtmoGlare = 10,
     HDAtmoColor = Color3.fromRGB(199, 199, 199), HDAtmoDecay = Color3.fromRGB(106, 112, 125),
+    -- Performa (statistik + FPS booster, hanya sisi klien)
+    ShowStats = false, Boost = false, BoostLevel = "Sedang",
+    BoostQuality = true, BoostQualityLevel = 3, BoostShadows = true, BoostFx = true, BoostParticles = true,
+    BoostTerrain = true, BoostMesh = true, BoostMaterials = false, BoostTextures = false, FpsCap = 0,
     -- Gerak
     Speed = false, SpeedVal = 24, SpeedSafe = true, Noclip = false, Fly = false, FlySpeed = 50,
     -- Violence District
@@ -188,9 +192,9 @@ end
 --------------------------------------------------------
 -- Sinkronisasi UI
 --------------------------------------------------------
-function Config.reg(key, fn)
+function Config.reg(key, fn, first)
     Refresh[key] = Refresh[key] or {}
-    table.insert(Refresh[key], fn)
+    if first then table.insert(Refresh[key], 1, fn) else table.insert(Refresh[key], fn) end
 end
 
 function Config.set(key, v, silent)

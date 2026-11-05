@@ -105,14 +105,14 @@ if getgenv then getgenv().TOFHubUnload = Hub.unload end
 --------------------------------------------------------
 local BOOT = {
     -- logika
-    "core/Roles", "features/Aim", "features/World", "features/Movement",
+    "core/Roles", "features/Aim", "features/World", "features/Perf", "features/Movement",
     "esp/Players", "esp/Zombies", "esp/Objects",
     -- UI dasar
     "ui/Window", "ui/FovCircle",
     -- tab (urutan = urutan di sidebar; tambah tab baru = tambah satu baris)
     "ui/tabs/Dashboard", "ui/tabs/Aim", "ui/tabs/ESP",
-    "ui/tabs/World", "ui/tabs/Move", "ui/tabs/ViolenceDistrict", "ui/tabs/Settings",
-    "ui/FloatButton",
+    "ui/tabs/World", "ui/tabs/Perf", "ui/tabs/Move", "ui/tabs/ViolenceDistrict", "ui/tabs/Settings",
+    "ui/FloatButton", "ui/StatsHud",
 }
 
 -- layar loading (ui/Splash) tampil lebih dulu; bar progres bergerak tiap modul dimuat
